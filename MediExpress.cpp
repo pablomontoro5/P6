@@ -690,12 +690,12 @@ MediExpress::MediExpress(const std::string &nomFichPaMed,
     }
 
 // 2. Crear la malla regular (N divisiones)
-    int N = 555;   // Ajustar para lograr 10–15 elementos por celda
+    int N = 888;   // Ajustar para lograr 10–15 elementos por celda
 
-    _grid = MallaRegular<Farmacia*>(floor(minLat),
-                                    floor(minLon),
-                                    ceil(maxLat),
-                                    ceil(maxLon),
+    _grid = MallaRegular<Farmacia*>(minLat,
+                                    minLon,
+                                    maxLat+3,
+                                    maxLon+3,
                                     N);
 
 // 3. Insertar todas las farmacias dentro de la malla
