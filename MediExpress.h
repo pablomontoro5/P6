@@ -13,6 +13,7 @@
 #include "Laboratorio.h"
 #include "Farmacia.h"
 #include "THashMedicam.h"
+#include "MallaRegular.h"
 
 class MediExpress {
 private:
@@ -22,6 +23,8 @@ private:
     std::vector<int> _vMedi;
     std::multimap<std::string,PA_Medicamento*> _nombMedication;
     std::list<PA_Medicamento> listaPaMed;
+    //Pr6
+    MallaRegular<Farmacia*> _grid;
 
 public:
     void _postprocesarCargas(const std::string &fichFarmacias);

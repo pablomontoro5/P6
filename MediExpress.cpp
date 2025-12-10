@@ -634,6 +634,53 @@ MediExpress::MediExpress(const std::string &nomFichPaMed,
     _cargarFarmaciasDesdeFichero(nomFichFar);
 
     // ======================================================
+//  PR6: CREAR LA MALLA REGULAR DE FARMACIAS (SIN AUTO)
+// ======================================================
+
+    float minLat = 1e9, maxLat = -1e9;
+    float minLon = 1e9, maxLon = -1e9;
+
+// 1. Calcular bounding box de todas las farmacias
+    std::multimap<std::string, Farmacia>::iterator it;
+    for (it = _pharmacy.begin(); it != _pharmacy.end(); ++it) {
+
+        float lat = it->second.getPos().GetX();
+        float lon = it->second.getPos().GetY();
+
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+        if (lon < minLon) minLon = lon;
+        if (lon > maxLon) maxLon = lon;
+    }
+
+// 2. Crear la malla regular (N divisiones)
+    int N = 500;   // Ajustar para lograr 10–15 elementos por celda
+
+    _grid = MallaRegular<Farmacia*>(floor(minLat),
+                                    floor(minLon),
+                                    ceil(maxLat),
+                                    ceil(maxLon),
+                                    N);
+
+// 3. Insertar todas las farmacias dentro de la malla
+    for (it = _pharmacy.begin(); it != _pharmacy.end(); ++it) {
+
+        float lat = it->second.getPos().GetX();
+        float lon = it->second.getPos().GetY();
+
+        _grid.insertar(lat, lon, &(it->second));
+    }
+
+// 4. Imprimir estadísticas de PR6
+    std::cout << "[PR6] Promedio elementos por celda = "
+              << _grid.promedioElementosPorCelda2()
+              << std::endl;
+
+    std::cout << "[PR6] Máximo elementos en una celda = "
+              << _grid.maxElementosPorCelda2()
+              << std::endl;
+
+    // ======================================================
     // 2. PRUEBA DE RENDIMIENTO ENTRE EL HASH Y LA LISTA
     // ======================================================
 
