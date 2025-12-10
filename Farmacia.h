@@ -13,12 +13,13 @@
 
 #include "PA_Medicamento.h"
 #include "Stock.h"
+#include "UTM.h"
 class MediExpress;
 class Farmacia {
 public:
     Farmacia(const std::string &cif, const std::string &provincia, const std::string &localidad,
              const std::string &nombre, const std::string &direccion, const std::string &codPostal,
-             MediExpress *linkMed);
+             MediExpress *linkMed, const UTM &pos);
 
 private:
     std::string _Cif,_Provincia,_Localidad,_Nombre,_Direccion,_CodPostal;
@@ -27,7 +28,7 @@ private:
 
     void pedidoMedicam(int _id_Num, int n);
 
-
+    UTM _pos;
 public:
     void setDireccion(const std::string &direccion);
     int contienePaMed(int id_num);
@@ -66,6 +67,7 @@ public:
 
     void setCif(const std::string &cif);
     bool eliminarStock(int _idNum);
+    const UTM &getPos() const { return _pos; }
 
 
 };

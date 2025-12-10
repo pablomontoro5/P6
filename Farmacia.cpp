@@ -1,3 +1,4 @@
+
 //
 // Created by Pablo Montoro on 26/10/2025.
 //
@@ -210,8 +211,8 @@ void Farmacia::setLinkMed(MediExpress *linkMed) {
  */
 Farmacia::Farmacia(const std::string &cif, const std::string &provincia, const std::string &localidad,
                    const std::string &nombre, const std::string &direccion, const std::string &codPostal,
-                   MediExpress *linkMed) : _Cif(cif), _Provincia(provincia), _Localidad(localidad), _Nombre(nombre),
-                                           _Direccion(direccion), _CodPostal(codPostal), linkMed(linkMed),_order() {
+                   MediExpress *linkMed, const UTM &pos) : _Cif(cif), _Provincia(provincia), _Localidad(localidad), _Nombre(nombre),
+                                           _Direccion(direccion), _CodPostal(codPostal), linkMed(linkMed),_order(),_pos(pos) {
 
 }
 
@@ -255,7 +256,7 @@ void Farmacia::pedidoMedicam(int _id_Num, int n) {
  * y el contenedor interno de stock (std::set<Stock>) vacío.
  */
 Farmacia::Farmacia() :_Cif("---"),_Provincia("---"),_Localidad("---"),_Nombre("---"),_Direccion("---"),_CodPostal("---"),linkMed(
-        nullptr),_order()
+        nullptr),_order(),_pos(0.0,0.0)
 {
 
 }

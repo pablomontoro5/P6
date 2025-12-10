@@ -467,39 +467,75 @@ Farmacia* MediExpress::buscarFarmacia(const std::string &cif) {
  *       farmacias leídas del fichero, asociando cada una al objeto MediExpress actual.
  */
 
-void MediExpress::_cargarFarmaciasDesdeFichero(const std::string &fich) {
-
-    std::ifstream is(fich);
-    if (!is.good()) {
-        std::cerr << "Error abriendo archivo de farmacias\n";
-        return;
-    }
-
-    std::string fila;
+void MediExpress::_cargarFarmaciasDesdeFichero(const std::string &nomFichFar)
+{
+    std::ifstream is;
     std::stringstream columnas;
-    std::string cif, provincia, localidad, nombre, direccion, cp;
+    std::string fila;
 
-    while (getline(is, fila)) {
+    std::string cif = "";
+    std::string provincia = "";
+    std::string localidad = "";
+    std::string nombre = "";
+    std::string direccion = "";
+    std::string cp = "";
+    std::string latitud_ = "";
+    std::string longitud_ = "";
 
-        if (fila.empty()) continue;
+    double lat, lon;
 
-        columnas.str(fila);
-        getline(columnas, cif, ';');
-        getline(columnas, provincia, ';');
-        getline(columnas, localidad, ';');
-        getline(columnas, nombre, ';');
-        getline(columnas, direccion, ';');
-        getline(columnas, cp, '\r');
-        columnas.clear();
+    // PR6: Para calcular bounding box
+    float minLat =  9999999, maxLat = -9999999;
+    float minLon =  9999999, maxLon = -9999999;
 
-        Farmacia far(cif, provincia, localidad, nombre, direccion, cp, this);
+    is.open(nomFichFar);
+    if (is.good()) {
 
-        // Igual que en constructor: usar insert, no push_back
-        _pharmacy.insert({provincia, far});
+        while (getline(is, fila)) {
+
+            if (fila != "") {
+
+                columnas.str(fila);
+
+                getline(columnas, cif, ';');
+                getline(columnas, provincia, ';');
+                getline(columnas, localidad, ';');
+                getline(columnas, nombre, ';');
+                getline(columnas, direccion, ';');
+                getline(columnas, cp, ';');
+                getline(columnas, latitud_, ';');      // PR6
+                getline(columnas, longitud_, '\r');    // PR6
+
+                columnas.clear();
+
+                // Convertir coordenadas
+                lat = std::stod(latitud_);
+                lon = std::stod(longitud_);
+
+                // PR6: Actualizar bounding box
+                if (lat < minLat) minLat = lat;
+                if (lat > maxLat) maxLat = lat;
+                if (lon < minLon) minLon = lon;
+                if (lon > maxLon) maxLon = lon;
+
+                // Crear posición UTM
+                UTM pos(lat, lon);
+
+                // Crear la farmacia con el NUEVO constructor (8 argumentos)
+                Farmacia far(cif, provincia, localidad, nombre, direccion, cp, this, pos);
+
+                // Insertar en multimap
+                _pharmacy.insert(std::make_pair(provincia, far));
+            }
+        }
+        is.close();
+    }
+    else {
+        std::cout << "Error de apertura en archivo de farmacias" << std::endl;
     }
 
-    is.close();
 }
+
 /**
  * @brief Constructor por defecto de MediExpress.
  *
@@ -644,8 +680,8 @@ MediExpress::MediExpress(const std::string &nomFichPaMed,
     std::multimap<std::string, Farmacia>::iterator it;
     for (it = _pharmacy.begin(); it != _pharmacy.end(); ++it) {
 
-        float lat = it->second.getPos().GetX();
-        float lon = it->second.getPos().GetY();
+        float lat = it->second.getPos().get_latitud();
+        float lon = it->second.getPos().get_longitud();
 
         if (lat < minLat) minLat = lat;
         if (lat > maxLat) maxLat = lat;
@@ -654,7 +690,7 @@ MediExpress::MediExpress(const std::string &nomFichPaMed,
     }
 
 // 2. Crear la malla regular (N divisiones)
-    int N = 500;   // Ajustar para lograr 10–15 elementos por celda
+    int N = 555;   // Ajustar para lograr 10–15 elementos por celda
 
     _grid = MallaRegular<Farmacia*>(floor(minLat),
                                     floor(minLon),
@@ -665,8 +701,8 @@ MediExpress::MediExpress(const std::string &nomFichPaMed,
 // 3. Insertar todas las farmacias dentro de la malla
     for (it = _pharmacy.begin(); it != _pharmacy.end(); ++it) {
 
-        float lat = it->second.getPos().GetX();
-        float lon = it->second.getPos().GetY();
+        float lat = it->second.getPos().get_latitud();
+        float lon = it->second.getPos().get_longitud();
 
         _grid.insertar(lat, lon, &(it->second));
     }
@@ -676,7 +712,7 @@ MediExpress::MediExpress(const std::string &nomFichPaMed,
               << _grid.promedioElementosPorCelda2()
               << std::endl;
 
-    std::cout << "[PR6] Máximo elementos en una celda = "
+    std::cout << "[PR6] Maximo elementos en una celda = "
               << _grid.maxElementosPorCelda2()
               << std::endl;
 
