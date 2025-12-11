@@ -210,8 +210,8 @@ void Farmacia::setLinkMed(MediExpress *linkMed) {
  */
 Farmacia::Farmacia(const std::string &cif, const std::string &provincia, const std::string &localidad,
                    const std::string &nombre, const std::string &direccion, const std::string &codPostal,
-                   MediExpress *linkMed) : _Cif(cif), _Provincia(provincia), _Localidad(localidad), _Nombre(nombre),
-                                           _Direccion(direccion), _CodPostal(codPostal), linkMed(linkMed),_order() {
+                   MediExpress *linkMed, UTM &pos) : _Cif(cif), _Provincia(provincia), _Localidad(localidad), _Nombre(nombre),
+                                           _Direccion(direccion), _CodPostal(codPostal), linkMed(linkMed),_order(), _posicion(pos){
 
 }
 

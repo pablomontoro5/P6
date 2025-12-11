@@ -10,20 +10,23 @@
 #include <set>
 #include <list>
 #include <vector>
+#include <map>
 
 #include "PA_Medicamento.h"
 #include "Stock.h"
+#include "UTM.h"
 class MediExpress;
 class Farmacia {
 public:
     Farmacia(const std::string &cif, const std::string &provincia, const std::string &localidad,
              const std::string &nombre, const std::string &direccion, const std::string &codPostal,
-             MediExpress *linkMed);
+             MediExpress *linkMed, UTM &pos);
 
 private:
     std::string _Cif,_Provincia,_Localidad,_Nombre,_Direccion,_CodPostal;
     std::set<Stock> _order;
     MediExpress *linkMed;
+    UTM _posicion;
 
     void pedidoMedicam(int _id_Num, int n);
 

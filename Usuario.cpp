@@ -21,19 +21,11 @@ void Usuario::setProvincia(const std::string &provincia) {
     _provincia = provincia;
 }
 
-UTM *Usuario::getCoord() const {
-    return _coord;
-}
-
-void Usuario::setCoord(UTM *coord) {
-    _coord = coord;
-}
-
 Usuario::~Usuario() {
 
 }
 
-Usuario::Usuario(int id, const std::string &provincia, UTM *coord, MediExpress *linkUser) : _id(id),
+Usuario::Usuario(int id, const std::string &provincia, UTM &coord, MediExpress *linkUser) : _id(id),
                                                                                             _provincia(provincia),
                                                                                             _coord(coord),
                                                                                             linkUser(linkUser) {}
@@ -51,4 +43,12 @@ Usuario::Usuario(const Usuario &orig):_id(orig._id), _provincia(orig._provincia)
 std::vector<Farmacia *> Usuario::getFarmaciaCercana(int n) {
     std::vector<Farmacia*> toRet = linkUser->buscarFarmacias(_coord,n);
     return toRet;
+}
+
+const UTM &Usuario::getCoord() const {
+    return _coord;
+}
+
+void Usuario::setCoord(const UTM &coord) {
+    _coord = coord;
 }

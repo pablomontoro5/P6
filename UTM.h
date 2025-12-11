@@ -13,6 +13,7 @@ private:
 public:
     UTM();
     UTM(float latitud, float longitud);
+    UTM(const UTM& orig);
 
     float getLongitud() const;
     void setLongitud(float longitud);

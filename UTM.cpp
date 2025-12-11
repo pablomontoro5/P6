@@ -6,6 +6,8 @@
 
 UTM::UTM(float latitud, float longitud) : latitud(latitud), longitud(longitud) {}
 
+UTM::UTM(const UTM &orig):latitud(orig.latitud), longitud(orig.longitud) {}
+
 float UTM::getLongitud() const {
     return longitud;
 }

@@ -5,8 +5,8 @@
 #ifndef P6_USUARIO_H
 #define P6_USUARIO_H
 
-#include "string"
-#include "vector"
+#include <string>
+#include <vector>
 
 #include "UTM.h"
 #include "Farmacia.h"
@@ -17,11 +17,11 @@ class Usuario {
 private:
     int _id;
     std::string _provincia;
-    UTM* _coord;
+    UTM _coord;
     MediExpress *linkUser;
 public:
     Usuario();
-    Usuario(int id, const std::string &provincia, UTM *coord, MediExpress *linkUser);
+    Usuario(int id, const std::string &provincia, UTM &coord, MediExpress *linkUser);
     Usuario(const Usuario& orig);
 
     int getId() const;
@@ -30,8 +30,8 @@ public:
     const std::string &getProvincia() const;
     void setProvincia(const std::string &provincia);
 
-    UTM *getCoord() const;
-    void setCoord(UTM *coord);
+    const UTM &getCoord() const;
+    void setCoord(const UTM &coord);
 
     virtual ~Usuario();
 
