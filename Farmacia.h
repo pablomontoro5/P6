@@ -24,7 +24,7 @@ public:
 
 private:
     std::string _Cif,_Provincia,_Localidad,_Nombre,_Direccion,_CodPostal;
-    std::set<Stock> _order;
+    std::map<int,Stock> _order;
     MediExpress *linkMed;
     UTM _posicion;
 

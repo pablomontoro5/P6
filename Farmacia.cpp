@@ -15,12 +15,9 @@
  */
 int Farmacia::contienePaMed(int id_num) {
     int toRet = 0;
-    Stock _auxiliarNumero4;
-    _auxiliarNumero4.setIdPaMed(id_num);
-
-    std::set<Stock>::iterator _it12= _order.find(_auxiliarNumero4);
+    std::map<int,Stock>::iterator _it12= _order.find(id_num);
     if(_it12 != _order.end()){
-        toRet = _it12->getNumStock();
+        toRet = _it12->second.getNumStock();
     }
     return toRet;
 }
@@ -35,10 +32,10 @@ int Farmacia::contienePaMed(int id_num) {
  */
 std::vector<PA_Medicamento *> Farmacia::buscarMedicamNombre(const std::string &nombreMedicam) {
    std::vector<PA_Medicamento*> toRet;
-   std::set<Stock>::iterator _it14 = _order.begin();
+   std::map<int,Stock>::iterator _it14 = _order.begin();
    while(_it14 != _order.end()){
-       if(_it14->getNumber()->getNombre().find(nombreMedicam) != std::string::npos){
-           toRet.push_back(_it14->getNumber());
+       if(_it14->second.getNumber()->getNombre().find(nombreMedicam) != std::string::npos){
+           toRet.push_back(_it14->second.getNumber());
        }
        _it14++;
    }
@@ -115,14 +112,12 @@ void Farmacia::setNombre(const std::string &nombre) {
  */
 int Farmacia::comprarMedicam(int _idNum, int numAComprar, PA_Medicamento* &result) {
     if(buscaMedicamID(_idNum)>=numAComprar){
-        Stock _auxiliarNumero5;
-        _auxiliarNumero5.setIdPaMed(_idNum);
-        std::set<Stock>::iterator _it13 = _order.find(_auxiliarNumero5); //Hacemos esto porque a los set se le ha de pasar un objeto si o si
-        Stock _auxiliarNumero6= (*_it13);
+        std::map<int,Stock>::iterator _it13 = _order.find(_idNum); //Hacemos esto porque a los set se le ha de pasar un objeto si o si
+        Stock _auxiliarNumero6= (_it13->second);
         _order.erase(_it13);
         _auxiliarNumero6.decrementa(numAComprar);
-        _order.insert(_auxiliarNumero6);
-        result = _order.find(_auxiliarNumero6)->getNumber();
+        _order.insert(std::pair<int,Stock>(_idNum,_auxiliarNumero6));
+        result = _order.find(_idNum)->second.getNumber();
     }else{
         pedidoMedicam(_idNum,10);
         result = nullptr;
@@ -163,17 +158,15 @@ const std::string &Farmacia::getCodPostal() const {
  * @param n Número de unidades a añadir al stock (debe ser positivo).
  */
 void Farmacia::nuevoStock(PA_Medicamento *pa, int n) {
-    Stock _auxiliarNumero1;
-    _auxiliarNumero1.setIdPaMed(pa->getIdNum());
-    std::set<Stock>::iterator _it10 = _order.find(_auxiliarNumero1);
+    std::map<int,Stock>::iterator _it10 = _order.find(pa->getIdNum());
     if(_it10 != _order.end()){
-        Stock _auxiliarNumero2 = *_it10;
+        Stock _auxiliarNumero2 = _it10->second;
         _order.erase(_it10);
         _auxiliarNumero2.incrementa(n);
-        _order.insert(_auxiliarNumero2);
+        _order.insert(std::pair<int,Stock>(pa->getIdNum(),_auxiliarNumero2));
     }else{
         Stock _nuevoStockAuxiliar(pa->getIdNum(), n, pa);
-        _order.insert(_nuevoStockAuxiliar);
+        _order.insert(std::pair<int,Stock>(pa->getIdNum(),_nuevoStockAuxiliar));
     }
 }
 /**
@@ -227,11 +220,9 @@ Farmacia::Farmacia(const std::string &cif, const std::string &provincia, const s
  * @return Número de unidades en stock del medicamento indicado, o 0 si no existe stock en la farmacia.
  */
 int Farmacia::buscaMedicamID(int _id_num) {
-    Stock _auxiliarNumero6;
-    _auxiliarNumero6.setIdPaMed(_id_num);
-    std::set<Stock>::iterator _it13 = _order.find(_auxiliarNumero6);
+    std::map<int,Stock>::iterator _it13 = _order.find(_id_num);
     if(_it13 != _order.end()){
-        return _it13->getNumStock();
+        return _it13->second.getNumStock();
     }
     return 0;
 }
@@ -267,9 +258,7 @@ Farmacia::Farmacia() :_Cif("---"),_Provincia("---"),_Localidad("---"),_Nombre("-
  *         false en caso contrario.
  */
 bool Farmacia::eliminarStock(int _idNum) {
-    Stock _auxiliarNumero3;
-    _auxiliarNumero3.setIdPaMed(_idNum);
-    std::set<Stock>::iterator _it11 = _order.find(_auxiliarNumero3);
+    std::map<int,Stock>::iterator _it11 = _order.find(_idNum);
     if(_it11 != _order.end()){
         _order.erase(_it11);
         return true;
