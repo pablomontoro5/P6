@@ -6,4 +6,8 @@ set(CMAKE_CXX_STANDARD 26)
 add_executable(P6 main.cpp Farmacia.cpp Farmacia.h Laboratorio.cpp Laboratorio.h MediExpress.cpp MediExpress.h PA_Medicamento.cpp PA_Medicamento.h Stock.cpp Stock.h
         THashMedicam.cpp
         THashMedicam.h
-        Entrada.h)
+        Entrada.h
+        Usuario.cpp
+        Usuario.h
+        UTM.cpp
+        UTM.h)
