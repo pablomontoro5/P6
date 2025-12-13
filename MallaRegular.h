@@ -74,11 +74,20 @@ float MallaRegular<T>::distancia(float lat1, float lon1, float lat2, float lon2)
 }
 
 template <typename T>
-Casilla<T>* MallaRegular<T>::obtenerCasilla(float x, float y){
-    int i = (x - xMin) / tamaCasillaX;
-    int j = (y - yMin) / tamaCasillaY;
+Casilla<T>* MallaRegular<T>::obtenerCasilla(float x, float y) {
+
+    int i = (int)((x - xMin) / tamaCasillaX);
+    int j = (int)((y - yMin) / tamaCasillaY);
+
+    // Clamp para que nunca salga de rango
+    if (i < 0) i = 0;
+    if (j < 0) j = 0;
+    if (i >= (int)ndivi) i = (int)ndivi - 1;
+    if (j >= (int)ndivi) j = (int)ndivi - 1;
+
     return &mr[i][j];
 }
+
 
 template <typename T>
 void MallaRegular<T>::insertar(float x, float y, const T& dato){

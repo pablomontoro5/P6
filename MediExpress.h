@@ -69,6 +69,7 @@ public:
     std::vector<Usuario*> buscaUsuario(const std::string &prov);   //PR6
     void Farmacia_parejas();
     void PintarImagen(std::string nomFich);   //PR6 voluntaria
+    void simulacionPR6();
 };
 
 

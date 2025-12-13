@@ -147,6 +147,11 @@ void MediExpress::_postprocesarCargas(const std::string &fichFarmacias){
         }
     }
 }
+static std::string aMayusculas(std::string s) {
+    int i;
+    for (i = 0; i < (int)s.size(); ++i) s[i] = (char)toupper(s[i]);
+    return s;
+}
 /**
  * @brief Obtiene todas las farmacias cuya provincia contiene la cadena indicada.
  * @param provincia Subcadena a buscarEnTabla dentro del campo provincia de cada farmacia.
@@ -154,18 +159,23 @@ void MediExpress::_postprocesarCargas(const std::string &fichFarmacias){
  * @note La búsqueda se realiza recorriendo el contenedor interno std::vector<Farmacia>.
  *       La coincidencia usa std::string::find y es sensible a mayúsculas/minúsculas.
  */
-std::vector<Farmacia*> MediExpress::buscarFarmacias(const std::string &provincia) {
 
-    std::vector<Farmacia*> toRet;
 
-    for (auto it = _pharmacy.begin(); it != _pharmacy.end(); ++it) {
+std::vector<Farmacia*> MediExpress::buscarFarmacias(const std::string &prov) {
+    std::vector<Farmacia*> res;
 
-        if (it->first.find(provincia) != std::string::npos) {
-            toRet.push_back(&(it->second));
+    std::string provMay = aMayusculas(prov);
+
+    std::multimap<std::string, Farmacia>::iterator it;
+    for (it = _pharmacy.begin(); it != _pharmacy.end(); ++it) {
+        std::string keyMay = aMayusculas(it->first);
+        if (keyMay == provMay) {
+            res.push_back(&(it->second));
         }
     }
-    return toRet;
+    return res;
 }
+
 
 
 /**
@@ -703,16 +713,18 @@ void MediExpress::_cargarUsuariosDesdeFichero(const std::string &nomFichUsu) {
  *       y medicamentos repartidos en todos los nodos del sistema.
  */
 MediExpress::MediExpress(const std::string &nomFichPaMed, const std::string &nomFichLab,
-                         const std::string &nomFichFar, const std::string &nomFichUsu, unsigned long tam, float lamda)
+                         const std::string &nomFichFar, const std::string &nomFichUsu,
+                         unsigned long tam, float lamda)
         : idMedication(tam, lamda),
           _labs(),
           _pharmacy(),
           _nombMedication(),
           _vMedi(),
-          listaPaMed(),users()
+          listaPaMed(),
+          users()
 {
     // ======================================================
-    // 1. CARGAS PRINCIPALES (ANTES ESTABAN EN EL CONSTRUCTOR)
+    // 1. CARGAS PRINCIPALES
     // ======================================================
     _cargarMedicamentosDesdeFichero(nomFichPaMed);
     _cargarLaboratoriosDesdeFichero(nomFichLab);
@@ -720,86 +732,150 @@ MediExpress::MediExpress(const std::string &nomFichPaMed, const std::string &nom
     _cargarUsuariosDesdeFichero(nomFichUsu);
 
     // ======================================================
-//  PR6: CREAR LA MALLA REGULAR DE FARMACIAS (SIN AUTO)
-// ======================================================
+    // PR6: CREAR LA MALLA REGULAR DE FARMACIAS (AJUSTE POR MAX 10-15)
+    // ======================================================
 
-    float minLat = 1e9, maxLat = -1e9;
-    float minLon = 1e9, maxLon = -1e9;
+    if (_pharmacy.size() == 0) {
+        std::cout << "[PR6] No hay farmacias cargadas. No se crea malla.\n";
+    } else {
 
-// 1. Calcular bounding box de todas las farmacias
-    std::multimap<std::string, Farmacia>::iterator it;
-    for (it = _pharmacy.begin(); it != _pharmacy.end(); ++it) {
+        float minLat = 1e9f, maxLat = -1e9f;
+        float minLon = 1e9f, maxLon = -1e9f;
 
-        float lat = it->second.getPos().get_latitud();
-        float lon = it->second.getPos().get_longitud();
+        // 1) Bounding box
+        std::multimap<std::string, Farmacia>::iterator it;
+        for (it = _pharmacy.begin(); it != _pharmacy.end(); ++it) {
 
-        if (lat < minLat) minLat = lat;
-        if (lat > maxLat) maxLat = lat;
-        if (lon < minLon) minLon = lon;
-        if (lon > maxLon) maxLon = lon;
+            float lat = it->second.getPos().get_latitud();
+            float lon = it->second.getPos().get_longitud();
+
+            if (lat < minLat) minLat = lat;
+            if (lat > maxLat) maxLat = lat;
+            if (lon < minLon) minLon = lon;
+            if (lon > maxLon) maxLon = lon;
+        }
+
+        // Función local: construye una malla temporal e inserta farmacias
+        auto construirMalla = [&](int Ndiv) -> MallaRegular<Farmacia*> {
+
+            float rangoLat = maxLat - minLat;
+            float rangoLon = maxLon - minLon;
+
+            // margen ~ 1 celda
+            float margenLat = (rangoLat == 0.0f) ? 0.0001f : (rangoLat / (float)Ndiv);
+            float margenLon = (rangoLon == 0.0f) ? 0.0001f : (rangoLon / (float)Ndiv);
+
+            MallaRegular<Farmacia*> tmp(
+                    minLat - margenLat, minLon - margenLon,
+                    maxLat + margenLat, maxLon + margenLon,
+                    Ndiv
+            );
+
+            std::multimap<std::string, Farmacia>::iterator it2;
+            for (it2 = _pharmacy.begin(); it2 != _pharmacy.end(); ++it2) {
+                float lat = it2->second.getPos().get_latitud();
+                float lon = it2->second.getPos().get_longitud();
+                tmp.insertar(lat, lon, &(it2->second));
+            }
+
+            return tmp;
+        };
+
+        int N = 30;                 // inicio
+        int iter = 0, maxIter = 60; // límite
+        unsigned maxCelda = 0;
+
+        while (iter < maxIter) {
+
+            if (N < 2) N = 2;
+
+            MallaRegular<Farmacia*> tmp = construirMalla(N);
+            maxCelda = tmp.maxElementosPorCelda2();
+
+            std::cout << "[AJUSTE MALLA] N=" << N
+                      << " maxPorCelda=" << maxCelda
+                      << " promedio=" << tmp.promedioElementosPorCelda2()
+                      << std::endl;
+
+            if (maxCelda >= 10 && maxCelda <= 15) {
+                _grid = tmp;  // ✅ guardamos la buena
+                break;
+            }
+
+            // Ajuste
+            if (maxCelda > 15) {
+                N += 10;      // más casillas => baja max
+            } else {
+                N -= 10;      // menos casillas => sube max
+            }
+
+            iter++;
+        }
+
+        // Si no encontró rango, deja la última malla construida con N final
+        if (!(maxCelda >= 10 && maxCelda <= 15)) {
+            if (N < 2) N = 2;
+            _grid = construirMalla(N);
+            maxCelda = _grid.maxElementosPorCelda2();
+        }
+
+        std::cout << "[PR6] N final = " << N
+                  << " | maxPorCelda=" << _grid.maxElementosPorCelda2()
+                  << " | promedio=" << _grid.promedioElementosPorCelda2()
+                  << std::endl;
+
+        std::cout << "[PR6] Promedio elementos por celda = "
+                  << _grid.promedioElementosPorCelda2()
+                  << std::endl;
+
+        std::cout << "[PR6] Maximo elementos en una celda = "
+                  << _grid.maxElementosPorCelda2()
+                  << std::endl;
     }
-
-// 2. Crear la malla regular (N divisiones)
-    int N = 888;   // Ajustar para lograr 10–15 elementos por celda
-
-    _grid = MallaRegular<Farmacia*>(minLat,
-                                    minLon,
-                                    maxLat+3,
-                                    maxLon+3,
-                                    N);
-
-// 3. Insertar todas las farmacias dentro de la malla
-    for (it = _pharmacy.begin(); it != _pharmacy.end(); ++it) {
-
-        float lat = it->second.getPos().get_latitud();
-        float lon = it->second.getPos().get_longitud();
-
-        _grid.insertar(lat, lon, &(it->second));
-    }
-
-// 4. Imprimir estadísticas de PR6
-    std::cout << "[PR6] Promedio elementos por celda = "
-              << _grid.promedioElementosPorCelda2()
-              << std::endl;
-
-    std::cout << "[PR6] Maximo elementos en una celda = "
-              << _grid.maxElementosPorCelda2()
-              << std::endl;
 
     // ======================================================
     // 2. PRUEBA DE RENDIMIENTO ENTRE EL HASH Y LA LISTA
     // ======================================================
+    std::chrono::high_resolution_clock::time_point start =
+            std::chrono::high_resolution_clock::now();
 
-    std::chrono::high_resolution_clock ::time_point start = std::chrono::high_resolution_clock::now();
-    for(int i=0; i<_vMedi.size(); i++){
+    for (int i = 0; i < (int)_vMedi.size(); i++) {
         idMedication.buscarEnTabla(_vMedi[i]);
     }
-    std::chrono::high_resolution_clock::time_point stop = std::chrono::high_resolution_clock::now();
-    std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-    std::cout << "***Tiempo de la busqueda de la _tablaHash Hash en milisegundos : ***" << duration.count() << std::endl;
+
+    std::chrono::high_resolution_clock::time_point stop =
+            std::chrono::high_resolution_clock::now();
+
+    std::chrono::milliseconds duration =
+            std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
+    std::cout << "***Tiempo de la busqueda de la _tablaHash Hash en milisegundos : ***"
+              << duration.count() << std::endl;
 
     start = std::chrono::high_resolution_clock::now();
-    int i=0;
-    while(i < _vMedi.size()){
+
+    int i = 0;
+    while (i < (int)_vMedi.size()) {
         std::list<PA_Medicamento>::iterator it = listaPaMed.begin();
-        while (it!=listaPaMed.end()){
-            if (it->getIdNum() == _vMedi[i]) {
-                break;
-            }
-            it++;
+        while (it != listaPaMed.end()) {
+            if (it->getIdNum() == _vMedi[i]) break;
+            ++it;
         }
         ++i;
     }
 
     stop = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-    std::cout << "***Tiempo de la busqueda de la lista en milisegundos : ***" << duration.count() <<  std::endl;
+
+    std::cout << "***Tiempo de la busqueda de la lista en milisegundos : ***"
+              << duration.count() << std::endl;
 
     // ======================================================
-    // 3. PROCESAMIENTO ADICIONAL (SUSTITUYE PARTE DEL CONSTRUCTOR)
+    // 3. PROCESAMIENTO ADICIONAL
     // ======================================================
     _postprocesarCargas(nomFichFar);
 }
+
 
 std::vector<Farmacia *> MediExpress::buscarFarmacias(UTM utm, int n) {
     std::vector<Farmacia*> ret;
@@ -811,6 +887,7 @@ std::vector<Farmacia *> MediExpress::buscarFarmacias(UTM utm, int n) {
         return vacio;
     }
     ret = _grid.buscarCercana(x,y,n);
+    return ret;
 }
 
 std::vector<Usuario*> MediExpress::buscaUsuario(const std::string &prov) {
@@ -825,4 +902,83 @@ std::vector<Usuario*> MediExpress::buscaUsuario(const std::string &prov) {
 
     return res;
 }
+void MediExpress::Farmacia_parejas() {
+    std::cout << "\n========== [PAREJA] ==========\n";
+
+    // 1) Crear + insertar farmacia nueva en JAEN
+    std::string cif = "JAEN-PAREJA-001";
+    std::string provincia = "JAEN";
+    std::string localidad = "JAEN";
+    std::string nombre = "Farmacia Nueva Pareja";
+    std::string direccion = "Calle Prueba 1";
+    std::string cp = "23001";
+
+    // Pon aquí coords reales si las tenéis
+    double lat = 37.7790;
+    double lon = -3.7840;
+
+    UTM pos(lat, lon);
+    Farmacia nueva(cif, provincia, localidad, nombre, direccion, cp, this, pos);
+
+    std::multimap<std::string, Farmacia>::iterator itIns =
+            _pharmacy.insert(std::make_pair(provincia, nueva));
+
+    Farmacia* fNueva = &(itIns->second);
+
+    // Insertarla también en la malla
+    _grid.insertar(fNueva->getPos().get_latitud(),
+                   fNueva->getPos().get_longitud(),
+                   fNueva);
+
+    std::cout << "[PAREJA] Insertada farmacia: " << fNueva->getNombre()
+              << " (" << fNueva->getLocalidad() << ")\n";
+
+    // 2) Asignar meds que contengan "MAGNESIO"
+    std::vector<PA_Medicamento*> medsMag = buscarCompuesto("MAGNESIO");
+    int i;
+    for (i = 0; i < (int)medsMag.size(); ++i) {
+        suministrarFarmacia(fNueva, medsMag[i]->getIdNum(), 10);
+    }
+    std::cout << "[PAREJA] Asignados " << medsMag.size()
+              << " medicamentos con MAGNESIO\n";
+
+    // 3) Usuario más cercano a esa farmacia
+    Usuario* mejor = 0;
+    float mejorDist = 1e9f;
+
+    std::map<int, Usuario>::iterator itu;
+    for (itu = users.begin(); itu != users.end(); ++itu) {
+        float ux = itu->second.getCoord().get_latitud();
+        float uy = itu->second.getCoord().get_longitud();
+        float fx = fNueva->getPos().get_latitud();
+        float fy = fNueva->getPos().get_longitud();
+
+        float d = std::sqrt((ux - fx)*(ux - fx) + (uy - fy)*(uy - fy));
+        if (d < mejorDist) {
+            mejorDist = d;
+            mejor = &(itu->second);
+        }
+    }
+
+    if (mejor != 0) {
+        std::cout << "[PAREJA] Usuario mas cercano: ID=" << mejor->getId()
+                  << " prov=" << mejor->getProvincia()
+                  << " dist=" << mejorDist << "\n";
+    }
+
+    // 4) Compra 3 unidades de MAGNESIO OXIDO
+    int idMagOx = 3640; // el que ya estabas usando
+    int stockAntes = fNueva->buscaMedicamID(idMagOx);
+    std::cout << "[PAREJA] Stock antes MAGNESIO OXIDO(" << idMagOx
+              << "): " << stockAntes << "\n";
+
+    PA_Medicamento* aux = 0;
+    fNueva->comprarMedicam(idMagOx, 3, aux);
+
+    int stockDespues = fNueva->buscaMedicamID(idMagOx);
+    std::cout << "[PAREJA] Stock despues MAGNESIO OXIDO(" << idMagOx
+              << "): " << stockDespues << "\n";
+}
+
+
 
