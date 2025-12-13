@@ -546,7 +546,7 @@ void MediExpress::_cargarFarmaciasDesdeFichero(const std::string &nomFichFar)
  *       métodos de carga para poblar el sistema.
  */
 MediExpress::MediExpress(): idMedication(3310, 0.7),
-                            _nombMedication(), _labs(), _pharmacy(), _vMedi(), listaPaMed() {
+                            _nombMedication(), _labs(), _pharmacy(), _vMedi(), listaPaMed(),users() {
 
 }
 /**
@@ -627,6 +627,58 @@ void MediExpress::mostrarEstadoTabla() {
 
 }
 
+void MediExpress::_cargarUsuariosDesdeFichero(const std::string &nomFichUsu) {
+
+    std::ifstream is;
+    std::stringstream columnas;
+    std::string fila;
+
+    int idu = 0;
+    std::string iducad;
+    std::string provincia;
+    std::string latitud_;
+    std::string longitud_;
+
+    double lat, lon;
+
+    is.open(nomFichUsu);
+    if (!is.good()) {
+        std::cout << "Error de apertura en archivo de usuarios" << std::endl;
+        return;
+    }
+
+    while (getline(is, fila)) {
+
+        if (fila != "") {
+
+            columnas.str(fila);
+
+            getline(columnas, iducad, ';');
+            getline(columnas, provincia, ';');
+            getline(columnas, latitud_, ';');
+            getline(columnas, longitud_, '\r');
+
+            columnas.clear();
+            fila = "";
+
+            lat=std::stod(latitud_);
+            lon=std::stod(longitud_);
+            idu = stoi(iducad);
+
+            fila = "";
+            columnas.clear();
+
+            UTM utm(lat,lon);
+            Usuario dato(idu,provincia,utm, this);
+
+            users.insert(make_pair(idu,dato));
+        }
+    }
+
+    is.close();
+
+    std::cout << "[PR6] Total usuarios cargados: " << users.size() << std::endl;
+}
 
 /**
  * @brief Construye el sistema MediExpress cargando todos los datos desde fichero y
@@ -650,17 +702,14 @@ void MediExpress::mostrarEstadoTabla() {
  * @post El objeto queda completamente inicializado, con laboratorios y farmacias enlazados
  *       y medicamentos repartidos en todos los nodos del sistema.
  */
-MediExpress::MediExpress(const std::string &nomFichPaMed,
-                         const std::string &nomFichLab,
-                         const std::string &nomFichFar,
-                         unsigned long tam,
-                         float lamda)
+MediExpress::MediExpress(const std::string &nomFichPaMed, const std::string &nomFichLab,
+                         const std::string &nomFichFar, const std::string &nomFichUsu, unsigned long tam, float lamda)
         : idMedication(tam, lamda),
           _labs(),
           _pharmacy(),
           _nombMedication(),
           _vMedi(),
-          listaPaMed()
+          listaPaMed(),users()
 {
     // ======================================================
     // 1. CARGAS PRINCIPALES (ANTES ESTABAN EN EL CONSTRUCTOR)
@@ -668,6 +717,7 @@ MediExpress::MediExpress(const std::string &nomFichPaMed,
     _cargarMedicamentosDesdeFichero(nomFichPaMed);
     _cargarLaboratoriosDesdeFichero(nomFichLab);
     _cargarFarmaciasDesdeFichero(nomFichFar);
+    _cargarUsuariosDesdeFichero(nomFichUsu);
 
     // ======================================================
 //  PR6: CREAR LA MALLA REGULAR DE FARMACIAS (SIN AUTO)
@@ -751,4 +801,28 @@ MediExpress::MediExpress(const std::string &nomFichPaMed,
     _postprocesarCargas(nomFichFar);
 }
 
+std::vector<Farmacia *> MediExpress::buscarFarmacias(UTM utm, int n) {
+    std::vector<Farmacia*> ret;
+    float x = utm.get_latitud();
+    float y = utm.get_longitud();
+
+    if(n <=0){
+        std::vector<Farmacia*> vacio;
+        return vacio;
+    }
+    ret = _grid.buscarCercana(x,y,n);
+}
+
+std::vector<Usuario*> MediExpress::buscaUsuario(const std::string &prov) {
+    std::vector<Usuario*> res;
+
+    std::map<int, Usuario>::iterator it;
+    for (it = users.begin(); it != users.end(); ++it) {
+        if (it->second.getProvincia() == prov) {
+            res.push_back(&(it->second));
+        }
+    }
+
+    return res;
+}
 

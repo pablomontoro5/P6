@@ -25,6 +25,8 @@ private:
     std::list<PA_Medicamento> listaPaMed;
     //Pr6
     MallaRegular<Farmacia*> _grid;
+    map<int,Usuario> users;
+    float distancia(float lat1, float lon1, float lat2, float lon2); //Parejas
 
 public:
     void _postprocesarCargas(const std::string &fichFarmacias);
@@ -38,7 +40,7 @@ public:
 
     void _cargarFarmaciasDesdeFichero(const std::string& _ficheroFarmacias);
     MediExpress(const std::string &nomFichPaMed, const std::string &nomFichLab,
-                const std::string &nomFichFar, unsigned long tam, float lamda);
+                const std::string &nomFichFar, const std::string &nomFichUsu, unsigned long tam, float lamda);
 
     std::vector<PA_Medicamento*> getMedicamentosSinLab();
     Laboratorio* buscarLab(const std::string &nombreLab);
@@ -59,7 +61,13 @@ public:
     void asignarLabsMadridAMedicamentosSinAsignar();
     static unsigned long contarMedicamentos(const std::string &nomFichPaMed);
 
+    //Pr6
 
+    void _cargarUsuariosDesdeFichero(const std::string &nomFichUsu);
+    std::vector<Farmacia*> buscarFarmacias(UTM utm, int n);  //PR6
+    std::vector<Usuario*> buscaUsuario(const std::string &prov);   //PR6
+    void Farmacia_parejas();
+    void PintarImagen(std::string nomFich);   //PR6 voluntaria
 };
 
 

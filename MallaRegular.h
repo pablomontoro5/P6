@@ -8,7 +8,8 @@
 #include "Casilla.h"
 #include <vector>
 #include <cmath>
-
+#include <algorithm>
+#include <utility>
 template <typename T>
 class MallaRegular {
 
@@ -124,53 +125,99 @@ float MallaRegular<T>::promedioElementosPorCelda2(){
 }
 template <typename T>
 std::vector<T> MallaRegular<T>::buscarCercana(float x, float y, int n) {
-    std::vector<std::pair<float, T>> candidatos;
+    std::vector<T> resultado;
+    if (n <= 0 || ndivi == 0) return resultado;
 
-    int ci = (x - xMin) / tamaCasillaX;
-    int cj = (y - yMin) / tamaCasillaY;
+    // 1) localizar celda base (índices)
+    int ci = static_cast<int>((x - xMin) / tamaCasillaX);
+    int cj = static_cast<int>((y - yMin) / tamaCasillaY);
 
     if (ci < 0) ci = 0;
-    if (ci >= ndivi) ci = ndivi - 1;
+    if (ci >= static_cast<int>(ndivi)) ci = static_cast<int>(ndivi) - 1;
     if (cj < 0) cj = 0;
-    if (cj >= ndivi) cj = ndivi - 1;
+    if (cj >= static_cast<int>(ndivi)) cj = static_cast<int>(ndivi) - 1;
+
+    // 2) expandir por anillos y recoger candidatos
+    std::vector<std::pair<float, T> > candidatos;
+    candidatos.reserve(n * 8); // reserva aproximada
 
     int radio = 0;
 
-    while ((int)candidatos.size() < n && radio < ndivi) {
+    while (static_cast<int>(candidatos.size()) < n && radio < static_cast<int>(ndivi)) {
 
-        for (int i = ci - radio; i <= ci + radio; i++) {
-            for (int j = cj - radio; j <= cj + radio; j++) {
+        int iMin = ci - radio;
+        int iMax = ci + radio;
+        int jMin = cj - radio;
+        int jMax = cj + radio;
 
-                if (i < 0 || i >= ndivi || j < 0 || j >= ndivi) continue;
+        if (iMin < 0) iMin = 0;
+        if (jMin < 0) jMin = 0;
+        if (iMax >= static_cast<int>(ndivi)) iMax = static_cast<int>(ndivi) - 1;
+        if (jMax >= static_cast<int>(ndivi)) jMax = static_cast<int>(ndivi) - 1;
 
-                // Iterador explícito (sin auto)
+        // Recorremos SOLO el borde del anillo:
+        // - fila superior (jMin) y fila inferior (jMax)
+        // - columna izquierda (iMin) y columna derecha (iMax)
+        // evitando duplicar esquinas
+
+        // fila superior
+        int i;
+        for (i = iMin; i <= iMax; ++i) {
+            typename std::list<T>::iterator it;
+            for (it = mr[i][jMin].begin(); it != mr[i][jMin].end(); ++it) {
+                float d = distancia(x, y, (*it)->getPos().get_latitud(), (*it)->getPos().get_longitud());
+                candidatos.push_back(std::make_pair(d, *it));
+            }
+        }
+
+        // fila inferior (si es distinta)
+        if (jMax != jMin) {
+            for (i = iMin; i <= iMax; ++i) {
                 typename std::list<T>::iterator it;
-
-                for (it = mr[i][j].puntos.begin(); it != mr[i][j].puntos.end(); ++it) {
-
-                    // elem = *it
-                    T elem = *it;
-
-                    float d = distancia(x, y,
-                                        elem->getPos().GetX(),
-                                        elem->getPos().GetY());
-
-                    candidatos.push_back(std::pair<float, T>(d, elem));
+                for (it = mr[i][jMax].begin(); it != mr[i][jMax].end(); ++it) {
+                    float d = distancia(x, y, (*it)->getPos().get_latitud(), (*it)->getPos().get_longitud());
+                    candidatos.push_back(std::make_pair(d, *it));
                 }
             }
         }
-        radio++;
+
+        // columna izquierda (sin esquinas ya contadas)
+        int j;
+        for (j = jMin + 1; j <= jMax - 1; ++j) {
+            typename std::list<T>::iterator it;
+            for (it = mr[iMin][j].begin(); it != mr[iMin][j].end(); ++it) {
+                float d = distancia(x, y, (*it)->getPos().get_latitud(), (*it)->getPos().get_longitud());
+                candidatos.push_back(std::make_pair(d, *it));
+            }
+        }
+
+        // columna derecha (si es distinta, sin esquinas ya contadas)
+        if (iMax != iMin) {
+            for (j = jMin + 1; j <= jMax - 1; ++j) {
+                typename std::list<T>::iterator it;
+                for (it = mr[iMax][j].begin(); it != mr[iMax][j].end(); ++it) {
+                    float d = distancia(x, y, (*it)->getPos().get_latitud(), (*it)->getPos().get_longitud());
+                    candidatos.push_back(std::make_pair(d, *it));
+                }
+            }
+        }
+
+        ++radio;
     }
 
-    // ordenar por distancia (sin auto)
-    sort(candidatos.begin(), candidatos.end(),
-         [](const std::pair<float, T> &a, const std::pair<float, T> &b) {
-             return a.first < b.first;
-         });
+    // 3) ordenar por distancia
+    std::sort(candidatos.begin(), candidatos.end(),
+              [](const std::pair<float, T>& a, const std::pair<float, T>& b) {
+                  return a.first < b.first;
+              });
 
-    // devolver solo los n más cercanos
-    std::vector<T> resultado;
-    for (int k = 0; k < n && k < (int)candidatos.size(); k++) {
+    // 4) quedarnos con los n primeros
+    int limite = n;
+    if (limite > static_cast<int>(candidatos.size()))
+        limite = static_cast<int>(candidatos.size());
+
+    int k;
+    for (k = 0; k < limite; ++k) {
         resultado.push_back(candidatos[k].second);
     }
 

@@ -15,7 +15,7 @@
 int main(int argc, const char * argv[]) {
     std::cout << "*** Programa de prueba 1: Ajuste del tamanio de la Malla Regular ***" << std::endl;
     try{
-        MediExpress prueba("../pa_medicamentos.csv","../lab2.csv","../farmacias.csv",3310,0.65);
+        MediExpress prueba("../pa_medicamentos.csv","../lab2.csv","../farmacias.csv","../usuarios.csv",3310,0.65);
     }catch(std::runtime_error &rte){
         std::cerr << rte.what() << std::endl;
     }catch(std::out_of_range &oor){
