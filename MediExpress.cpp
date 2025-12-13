@@ -671,7 +671,7 @@ void MediExpress::_cargarUsuariosDesdeFichero(const std::string &nomFichUsu) {
             UTM utm(lat,lon);
             Usuario dato(idu,provincia,utm, this);
 
-            users.insert(make_pair(idu,dato));
+            users.insert(std::make_pair(idu,dato));
         }
     }
 

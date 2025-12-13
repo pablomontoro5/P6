@@ -14,6 +14,7 @@
 #include "Farmacia.h"
 #include "THashMedicam.h"
 #include "MallaRegular.h"
+#include "Usuario.h"
 
 class MediExpress {
 private:
@@ -25,7 +26,7 @@ private:
     std::list<PA_Medicamento> listaPaMed;
     //Pr6
     MallaRegular<Farmacia*> _grid;
-    map<int,Usuario> users;
+    std::map<int,Usuario> users;
     float distancia(float lat1, float lon1, float lat2, float lon2); //Parejas
 
 public:

@@ -9,4 +9,6 @@ add_executable(P6 main.cpp Farmacia.cpp Farmacia.h Laboratorio.cpp Laboratorio.h
         Entrada.h
         Casilla.h
         MallaRegular.h
-        UTM.h)
+        UTM.h
+        Usuario.h
+        Usuario.cpp)
