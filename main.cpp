@@ -13,171 +13,225 @@
 
 
 int main(int argc, const char * argv[]) {
-    try{
-        //PRUEBA: Mediexpress
-        std::cout << std::endl << "PRUEBA.- MediExpress:" << std::endl;
+    try {
+        std::cout << std::endl << "***Programa de prueba de la Practica 6***" << std::endl;
 
-        std::cout << "Comienzo de lectura de ficheros y carga de DATOS " << std::endl;
+        std::cout << "*** Apartado 1. Carga de ficheros y parametros de la Tabla Hash ***" << std::endl;
 
-        MediExpress medi("../pa_medicamentos.csv","../lab2.csv",
+        MediExpress prueba("../pa_medicamentos.csv","../lab2.csv",
                          "../farmacias-coord.csv","../usuarios.csv", 3310,0.65);
 
-        //PUNTO 5
-        //Compras de medicamentos varios en Jaen
-        std::cout << std::endl << "Compran los Giennenses varios medicamentos:" << std::endl;
-        std::string medicam[]={"MAGNESIO CLORURO HEXAHIDRATO","LIDOCAINA HIDROCLORURO","MENTA PIPERITA"};
-        std::vector<Usuario*> vu= medi.buscaUsuario("Jaen");
-        std::vector<Farmacia*> vf= medi.buscarFarmacias("JAEN");
-        if (vf.size()!=0) {
-            for (int i = 0; i < vu.size(); i++) {
-                //compra
-                std::vector<PA_Medicamento *> vp = vu[i]->quieroMedicam(medicam[i % 3], vf[0]);
-                bool enc = false;
-                PA_Medicamento *med;
-                for (int j = 0; j < vp.size() && !enc; j++) {
-                    int uni = vu[i]->comprarMedicam(1, vp[j], vf[0]);
-                    if (uni > 0) {
-                        enc = true;
+        std::cout << std::endl << "*** Apartado 5. Compra de varios medicamentos en Jaen : ***" << std::endl;
+        std::string _vNombreMedicamentos[]={"MAGNESIO CLORURO HEXAHIDRATO","LIDOCAINA HIDROCLORURO","MENTA PIPERITA"};
+        std::vector<Usuario*> _vectorDeUsuarios= prueba.buscaUsuario("Jaen");
+        std::vector<Farmacia*> _vectorDeFarmacias= prueba.buscarFarmacias("JAEN");
+        if (_vectorDeFarmacias.size() != 0) {
+            int i = 0;
+            while (i < (int)_vectorDeUsuarios.size()) {
+
+                std::vector<PA_Medicamento *> _vAux =
+                    _vectorDeUsuarios[i]->quieroMedicam(_vNombreMedicamentos[i % 3], _vectorDeFarmacias[0]);
+
+                bool _encontrado = false;
+                PA_Medicamento *_pMedAux = nullptr;
+
+                int j = 0;
+                while (j < (int)_vAux.size() && !_encontrado) {
+                    int _unidades = _vectorDeUsuarios[i]->comprarMedicam(1, _vAux[j], _vectorDeFarmacias[0]);
+                    if (_unidades > 0) {
+                        _encontrado = true;
                     }
-                    med = vp[j];
+                    _pMedAux = _vAux[j];
+                    j++;
                 }
-                if (enc) {
-                    std::cout << "==>Usuario " << vu[i]->getId() << " compra " <<
-                         med->getNombre() << " en farmacia " << vf[0]->getNombre() <<
-                         " Stock: " << vf[0]->buscaMedicamID(med->getIdNum()) << std::endl;
-                }else{
-                    std::cout << "==>Usuario " << vu[i]->getId() << " **NO puede comprar " << medicam[i % 3]
-                         << " y pide 10 unidades" << std::endl;
-                    std::vector<PA_Medicamento*> vpos=medi.buscarCompuesto(medicam[i % 3]);
-                    if (vpos.size()!=0)
-                        vf[0]->nuevoStock(vpos[0],10);
+                if (_encontrado) {
+                    std::cout << "*** El usuario cuyo id es : *** " << _vectorDeUsuarios[i]->getId()
+                              << " ***ha comprado el medicamento : ***" << _pMedAux->getNombre()
+                              << " ***en la farmacia cuyo nombre es : *** " << _vectorDeFarmacias[0]->getNombre()
+                              << " *** y que posee el siguiente numero de unidades : *** "
+                              << _vectorDeFarmacias[0]->buscaMedicamID(_pMedAux->getIdNum())
+                              << std::endl;
+                } else {
+                    std::cout << "*** El usuario cuyo id es : *** " << _vectorDeUsuarios[i]->getId()
+                              << "  ***no puede adquirir el medicamento : ***" << _vNombreMedicamentos[i % 3]
+                              << "*** y, por lo tanto, se piden 10 unidades ***" << std::endl;
+
+                    std::vector<PA_Medicamento*> vpos = prueba.buscarCompuesto(_vNombreMedicamentos[i % 3]);
+                    if (vpos.size() != 0) {
+                        _vectorDeFarmacias[0]->nuevoStock(vpos[0], 10);
+                    }
                 }
-                //comprueba cercana
-                std::vector<Farmacia *> cercana = vu[i]->getFarmaciaCercana(1);   //medi.buscarFarmacias(vu[i]->getCoord(), 1);
-                if (cercana.size() > 0) {
-                    if (cercana[0] == vf[0]) {
-                        std::cout << "La farmacia " << vf[0]->getNombre() << " en " <<
-                             vf[0]->getLocalidad() << ", " << vf[0]->getProvincia() << " es la mas cercana a usuario " <<
-                             vu[i]->getId() << std::endl;
+                std::vector<Farmacia *> _vectorDeFarmaciasCercanas =
+                    prueba.buscarFarmacias(_vectorDeUsuarios[i]->getCoord(), 1);
+                if (_vectorDeFarmaciasCercanas.size() > 0) {
+                    if (_vectorDeFarmaciasCercanas[0] == _vectorDeFarmacias[0]) {
+                        std::cout << "*** La farmacia con el nombre : ***" << _vectorDeFarmacias[0]->getNombre()
+                                  << " ***situada en: *** " << _vectorDeFarmacias[0]->getLocalidad()
+                                  << " ***, Provincia : ***" << _vectorDeFarmacias[0]->getProvincia()
+                                  << " *** es la mas cercana al usuario cuyo id es : ***"
+                                  << _vectorDeUsuarios[i]->getId() << std::endl;
                     } else {
-                        std::cout << "La farmacia " << vf[0]->getNombre() << " en " <<
-                             vf[0]->getDireccion() << " **NO es la mas cercana a " <<
-                             vu[i]->getId() << std::endl;
+                        std::cout << "*** La farmacia con el nombre : ***" << _vectorDeFarmacias[0]->getNombre()
+                                  << " ***situada en: *** " << _vectorDeFarmacias[0]->getDireccion()
+                                  << " *** no es la mas cercana al usuario cuyo id es : *** "
+                                  << _vectorDeUsuarios[i]->getId() << std::endl;
                     }
                 }
+                i++;
             }
         }
+        std::cout << std::endl << "*** Apartado 6. Compra por parte de los Sevillanos en la farmacia mas cercana : ***" << std::endl;
 
-
-        //Compras sevillanos en farmacia mas cercana
-        std::vector<Usuario*> vS= medi.buscaUsuario("Sevilla");
+        std::vector<Usuario*> _vectorDeSevilla= prueba.buscaUsuario("Sevilla");
         std::string medicina="MAGNESIO";
-
-        std::cout << std::endl << "Compran los Sevillanos MAGNESIO:" << std::endl;
-        for (int i=0; i<vS.size(); i++) {
-            std::cout << " * Usuario " << i << ": " << std::endl;
-            //farmacia mas cercana al usuario
-            std::vector<Farmacia *> cercanaS = vS[i]->getFarmaciaCercana(1);
-            //medicamentos de magnesio de esa farmacia
-            std::vector<PA_Medicamento *> vp = vS[i]->quieroMedicam(medicina, cercanaS[0]);
-            bool enc = false;
-            PA_Medicamento *med;
-            for (int j = 0; j < vp.size() && !enc; j++) {
-                int uni = vS[i]->comprarMedicam(1, vp[j], cercanaS[0]);
-                if (uni > 0) {
-                    enc = true;
+        int i2 = 0;
+        while (i2 < (int)_vectorDeSevilla.size()) {
+            std::vector<Farmacia *> _vFarmaciaMasCercanaEnSevilla = _vectorDeSevilla[i2]->getFarmaciaCercana(1);
+            std::vector<PA_Medicamento *> _vectorDeMedicamentosDeMagnesio =
+                _vectorDeSevilla[i2]->quieroMedicam(medicina, _vFarmaciaMasCercanaEnSevilla[0]);
+            bool _encontrado2 = false;
+            PA_Medicamento *_pMedAux2 = nullptr;
+            int j2 = 0;
+            while (j2 < (int)_vectorDeMedicamentosDeMagnesio.size() && !_encontrado2) {
+                int _unidades2 = _vectorDeSevilla[i2]->comprarMedicam(
+                    1, _vectorDeMedicamentosDeMagnesio[j2], _vFarmaciaMasCercanaEnSevilla[0]
+                );
+                if (_unidades2 > 0) {
+                    _encontrado2 = true;
                 }
-                med = vp[j];
+                _pMedAux2 = _vectorDeMedicamentosDeMagnesio[j2];
+                j2++;
             }
-            if (enc) {
-                std::cout << "==>Usuario " << vS[i]->getId() << " compra " <<
-                     med->getNombre() << " en farmacia " << cercanaS[0]->getNombre() <<
-                     " Stock: " << cercanaS[0]->buscaMedicamID(med->getIdNum()) << std::endl;
+            if (_encontrado2) {
+                std::cout << "***El usuario cuyo id es : ***" << _vectorDeSevilla[i2]->getId()
+                          << "*** compra el medicamento : ***" << _pMedAux2->getNombre()
+                          << " ***en la farmacia con nombre : ***" << _vFarmaciaMasCercanaEnSevilla[0]->getNombre()
+                          << " ***Dicha farmacia posee el siguiente numero de unidades : ***"
+                          << _vFarmaciaMasCercanaEnSevilla[0]->buscaMedicamID(_pMedAux2->getIdNum())
+                          << std::endl;
             } else {
-                std::cout << "==>Usuario " << vS[i]->getId() << " **NO puede comprar " << medicina
-                     << " y pide 10 unidades" << std::endl;
-                //medi.suministrarFarmacia(cercanaS[0],3640,10);
-                std::vector<PA_Medicamento *> vpos = medi.buscarCompuesto("MAGNESIO OXIDO");
-                if (vpos.size() != 0) {
-                    cercanaS[0]->nuevoStock(vpos[0], 10);
-                    std::cout << "Se solicita MAGNESIO OXIDO a la farmacia " << cercanaS[0]->getNombre() << std::endl;
+                std::cout << "***El usuario cuyo id es : ***" << _vectorDeSevilla[i2]->getId()
+                          << " ***no puede comprar el medicamento : ***" << medicina
+                          << std::endl;
+
+                std::vector<PA_Medicamento *> _vMagnesioOxido = prueba.buscarCompuesto("MAGNESIO OXIDO");
+                if (_vMagnesioOxido.size() != 0) {
+                    _vFarmaciaMasCercanaEnSevilla[0]->nuevoStock(_vMagnesioOxido[0], 10);
+                    std::cout << "***Se solicita MAGNESIO OXIDO a la siguiente farmacia : ***"
+                              << _vFarmaciaMasCercanaEnSevilla[0]->getNombre() << std::endl;
                 }
             }
-
+            i2++;
         }
 
-        //Buscar farmacias Madrid con BISMUTO y Usuarios Madrileños
-        std::cout << std::endl << "Vendemos BISMUTO en Madrid a los madrileeños." << std::endl;
-        std:: vector<Usuario*> vM= medi.buscaUsuario("Madrid");  //usuarios de Madrid
-        std::vector<Farmacia*> vFM= medi.buscarFarmacias("MADRID");  //farmacias de Madrid
-        std::vector<Farmacia*> vFMBismuto;
-        //de las de madrid me quedo con las q venden BISMUTO y tienen unidades
-        for (int i=0; i<vFM.size(); i++){
-            std::vector<PA_Medicamento*> vPAM= vFM[i]->buscarMedicamNombre("BISMUTO");
-            bool enc=false;
-            for (int j=0; j<vPAM.size() && !enc; j++) {
-                if (vFM[i]->buscaMedicamID(vPAM[j]->getIdNum()) > 0) {
-                    vFMBismuto.push_back(vFM[i]);
-                    enc = true;
-                }
-            }
-        }
+        std::cout << std::endl << "*** Apartado 7. Se vende BISMUTO en Madrid : ***" << std::endl;
+        std::vector<Usuario*> _vectorDeMadrid = prueba.buscaUsuario("Madrid");
+        std::vector<Farmacia*> _vectorFarmaciasMadrid = prueba.buscarFarmacias("MADRID");
+        std::vector<Farmacia*> _vectorFarmaciasMadridConBismuto;
 
-        for (int i=0; i<vM.size(); i++){   //por cada Usuario
-            std::vector<Farmacia *> cercanasM = vM[i]->getFarmaciaCercana(3); //busco 3 mas cercanas
-            bool enc=false;
-            Farmacia *elegida;
-            //PaMedicamento *elegido;
-            for (int j=0; j<cercanasM.size() && !enc; j++){  //busco cada una
-                for (int k=0; k<vFMBismuto.size() ; k++){   //entre las de madrid con Bismuto
-                    if (cercanasM[j]->getCif()==vFMBismuto[k]->getCif()){
-                        enc = true;
-                        elegida = vFMBismuto[k];
-                    }
+        int i3 = 0;
+        while (i3 < (int)_vectorFarmaciasMadrid.size()) {
+            std::vector<PA_Medicamento*> _vectorPrincipioActivoMadridConBismuto =
+                _vectorFarmaciasMadrid[i3]->buscarMedicamNombre("BISMUTO");
+            bool _encontrado3 = false;
+            int j3 = 0;
+            while (j3 < (int)_vectorPrincipioActivoMadridConBismuto.size() && !_encontrado3) {
+                if (_vectorFarmaciasMadrid[i3]->buscaMedicamID(
+                        _vectorPrincipioActivoMadridConBismuto[j3]->getIdNum()) > 0) {
+
+                    _vectorFarmaciasMadridConBismuto.push_back(_vectorFarmaciasMadrid[i3]);
+                    _encontrado3 = true;
                 }
+                j3++;
             }
-            if (enc){   //si alguna cercana es de madrid, miro si vende BISMUTO y tiene unidades
-                std::vector<PA_Medicamento*> vPAM= elegida->buscarMedicamNombre("BISMUTO");
-                bool enc1=false;
-                for (int j=0; j<vPAM.size() && !enc1; j++) {
-                    if (vM[i]->comprarMedicam(1,vPAM[j],elegida)==1) {
-                        std::cout << "-->Usuario " << vM[i]->getId() << " SI encontro BISMUTO en " << elegida->getCif() << std::endl;
-                        std::cout << "   Unidades stock medicamento " << vPAM[j]->getNombre() << " que quedan:" << elegida->buscaMedicamID(vPAM[j]->getIdNum())  << std::endl;
-                        enc1 = true;
+            i3++;
+        }
+        i3 = 0;
+        while (i3 < (int)_vectorDeMadrid.size()) {
+            std::vector<Farmacia *> _vectorFarmaciasCercanasEnMadrid =
+                _vectorDeMadrid[i3]->getFarmaciaCercana(3);
+            bool _encontrado4 = false;
+            Farmacia *_pFarmElegida = nullptr;
+            int j3 = 0;
+            while (j3 < (int)_vectorFarmaciasCercanasEnMadrid.size() && !_encontrado4) {
+                int k3 = 0;
+                while (k3 < (int)_vectorFarmaciasMadridConBismuto.size()) {
+                    if (_vectorFarmaciasCercanasEnMadrid[j3]->getCif() ==
+                        _vectorFarmaciasMadridConBismuto[k3]->getCif()) {
+                        _encontrado4 = true;
+                        _pFarmElegida = _vectorFarmaciasMadridConBismuto[k3];
                     }
+                    k3++;
                 }
-            }else
-                std::cout << "Usuario " << vM[i]->getId() << " No encontro BISMUTO entre sus 3 farmacias mas cercanas" << std::endl;
+                j3++;
+            }
+            if (_encontrado4) {
+                std::vector<PA_Medicamento*> _vectorPrincipiosActivosMadridConBismuto2 =
+                    _pFarmElegida->buscarMedicamNombre("BISMUTO");
+                bool _encontrado5 = false;
+                j3 = 0;
+                while (j3 < (int)_vectorPrincipiosActivosMadridConBismuto2.size() && !_encontrado5) {
+                    if (_vectorDeMadrid[i3]->comprarMedicam(
+                            1,
+                            _vectorPrincipiosActivosMadridConBismuto2[j3],
+                            _pFarmElegida) == 1) {
+                        std::cout << "***El usuario con id : ***" << _vectorDeMadrid[i3]->getId()
+                                  << "*** ha encontrado el BISMUTO en la farmacia cuyo cif es : ***"
+                                  << _pFarmElegida->getCif() << std::endl;
+                        std::cout << "*** Dicho medicamento tiene como nombre : ***"
+                                  << _vectorPrincipiosActivosMadridConBismuto2[j3]->getNombre()
+                                  << "*** y sus unidades restantes son : ***"
+                                  << _pFarmElegida->buscaMedicamID(
+                                         _vectorPrincipiosActivosMadridConBismuto2[j3]->getIdNum())
+                                  << std::endl;
+                        _encontrado5 = true;
+                    }
+                    j3++;
+                }
+            } else {
+                std::cout << "***El usuario con id : ***" << _vectorDeMadrid[i3]->getId()
+                          << "*** no ha encontrado BISMUTO entre sus 3 farmacias mas cercanas ***"
+                          << std::endl;
+            }
+            i3++;
         }
         std::cout << std::endl;
-        //borramos todos los Bismutos de todas las farmacias y mediexpress  PR6
-        std::vector<PA_Medicamento*> bismuto= medi.buscarCompuesto("BISMUTO");
-        if (bismuto.size()==0)
+
+        std::cout << std::endl << "*** Apartado 8. Se borra el BISMUTO de todas las farmacias y de MediExpress : ***" << std::endl;
+        std::vector<PA_Medicamento*> _vectorDeBismuto= prueba.buscarCompuesto("BISMUTO");
+        if (_vectorDeBismuto.size()==0) {
             std::cout << "No se encontro Medicamentos con BISMUTO" << std::endl;
-        for (int i=0; i<bismuto.size(); i++) {
-            if (medi.eliminarMedicamento(bismuto[i]->getIdNum()))
-                std::cout << "Se pudo eliminar el " << bismuto[i]->getNombre() << " !!!" << std::endl;
-            else
-                std::cout << "NO se encontro el " << bismuto[i]->getNombre() << " !!!" << std::endl;
-            if (!medi.buscarCompuesto(bismuto[i]->getIdNum()))
-                std::cout << "NO Existe el " << bismuto[i]->getNombre() << std::endl;
-            else
-                std::cout << "Existe el " << bismuto[i]->getNombre() << std::endl;
+        }
+        int i5 =0;
+        while (i5 < _vectorDeBismuto.size()) {
+            if (prueba.eliminarMedicamento(_vectorDeBismuto[i5]->getIdNum())) {
+                std::cout << "***Elimnado satisfactoriamente: ***" << _vectorDeBismuto[i5]->getNombre() << std::endl;
+            }else {
+                std::cout << "***NO se ha hallado: ***" << _vectorDeBismuto[i5]->getNombre() <<  std::endl;
+            }
+            if (!prueba.buscarCompuesto(_vectorDeBismuto[i5]->getIdNum())) {
+                std::cout << "***NO existe: ***" << _vectorDeBismuto[i5]->getNombre() << std::endl;
+            }else {
+                std::cout << "***Hay constancia de: *** " << _vectorDeBismuto[i5]->getNombre() << std::endl;
+            }
+            ++i5;
         }
 
         //PAREJAS
         std::cout << "En NUEVA FARMACIA, el Usuario mas cercano compra MAGNESIO OXIDO" << std::endl;
-        medi.Farmacia_parejas();
+        std::cout << std::endl << "*** Apartado 9. (Parejas) Se crea un metodo auxiliar para que el usuario mas cercano compre MAGNESIO OXIDO : ***" << std::endl;
+
+        prueba._metodoDeFarmaciaParteParejas();
 
         //Prueba de imagen
         //medi.PintarImagen("../imagen");
 
-    }catch (std::out_of_range &e){
-        std::cerr << e.what() << std::endl;
-    }catch (std::runtime_error &e){ //std::ifstream::failure &e){
-        std::cerr << "Excepcion en fichero: " << e.what() << std::endl;
-    }catch (std::bad_alloc &e){
-        std::cerr << "No hay memoria suficiente para el objeto dinamico" << std::endl;
+    }catch (std::out_of_range &oor){
+        std::cerr << oor.what() << std::endl;
+    }catch (std::runtime_error &rte){
+        std::cerr << "***Excepcion en fichero: ***" << rte.what() << std::endl;
+    }catch (std::bad_alloc &ba){
+        std::cerr << "*** Memoria insuficiente ***" << std::endl;
     }
 
     return 0;
