@@ -1,5 +1,5 @@
 //
-// Created by USUARIO on 11/12/2025.
+// Created by Lázaro Ruiz on 11/12/2025.
 //
 
 #ifndef P6_USUARIO_H
