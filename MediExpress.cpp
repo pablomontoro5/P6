@@ -811,7 +811,7 @@ MediExpress::MediExpress(const std::string &nomFichPaMed, const std::string &nom
             for (it2 = _pharmacy.begin(); it2 != _pharmacy.end(); ++it2) {
                 float lat = it2->second.getPos().get_latitud();
                 float lon = it2->second.getPos().get_longitud();
-                tmp.insertar(lat, lon, &(it2->second));
+                tmp._insertarEnMalla(lat, lon, &(it2->second));
             }
 
             return tmp;
@@ -826,11 +826,11 @@ MediExpress::MediExpress(const std::string &nomFichPaMed, const std::string &nom
             if (N < 2) N = 2;
 
             MallaRegular<Farmacia*> tmp = construirMalla(N);
-            maxCelda = tmp.maxElementosPorCelda2();
+            maxCelda = tmp._maximoDeElementosPorCelda();
 
             std::cout << "[AJUSTE MALLA] N=" << N
                       << " maxPorCelda=" << maxCelda
-                      << " promedio=" << tmp.promedioElementosPorCelda2()
+                      << " promedio=" << tmp._promedioDeElementosPorCelda()
                       << std::endl;
 
             if (maxCelda >= 10 && maxCelda <= 15) {
@@ -852,20 +852,20 @@ MediExpress::MediExpress(const std::string &nomFichPaMed, const std::string &nom
         if (!(maxCelda >= 10 && maxCelda <= 15)) {
             if (N < 2) N = 2;
             _grid = construirMalla(N);
-            maxCelda = _grid.maxElementosPorCelda2();
+            maxCelda = _grid._maximoDeElementosPorCelda();
         }
 
         std::cout << "[PR6] N final = " << N
-                  << " | maxPorCelda=" << _grid.maxElementosPorCelda2()
-                  << " | promedio=" << _grid.promedioElementosPorCelda2()
+                  << " | maxPorCelda=" << _grid._maximoDeElementosPorCelda()
+                  << " | promedio=" << _grid._promedioDeElementosPorCelda()
                   << std::endl;
 
         std::cout << "[PR6] Promedio elementos por celda = "
-                  << _grid.promedioElementosPorCelda2()
+                  << _grid._promedioDeElementosPorCelda()
                   << std::endl;
 
         std::cout << "[PR6] Maximo elementos en una celda = "
-                  << _grid.maxElementosPorCelda2()
+                  << _grid._maximoDeElementosPorCelda()
                   << std::endl;
     }
 
@@ -973,7 +973,7 @@ void MediExpress::_metodoDeFarmaciaParteParejas() {
     Farmacia* fNueva = &(itIns->second);
 
     // Insertarla también en la malla
-    _grid.insertar(fNueva->getPos().get_latitud(),
+    _grid._insertarEnMalla(fNueva->getPos().get_latitud(),
                    fNueva->getPos().get_longitud(),
                    fNueva);
 

@@ -2,6 +2,11 @@
 // Created by pablomontoro5 on 10/12/2025.
 //
 
+/**
+ * @file MallaRegular.h
+ * @brief Implementación de una malla regular 2D genérica.
+ */
+
 #ifndef P6_MALLAREGULAR_H
 #define P6_MALLAREGULAR_H
 
@@ -10,117 +15,200 @@
 #include <cmath>
 #include <algorithm>
 #include <utility>
+
+/**
+ * @class MallaRegular
+ * @brief Malla regular bidimensional para particionado espacial.
+ *
+ * Divide un espacio rectangular en una malla de N×N casillas. Cada casilla
+ * almacena elementos de tipo T. Permite inserción, borrado, búsqueda directa
+ * y búsqueda de vecinos cercanos.
+ *
+ * @tparam T Tipo de dato almacenado. En buscarCercana se asume que T es un
+ *         puntero a un objeto con método getPos() que devuelve un UTM.
+ */
 template <typename T>
 class MallaRegular {
 
 private:
-    float xMin, yMin, xMax, yMax;
-    float tamaCasillaX, tamaCasillaY;
-    unsigned taml, ndivi;
+    float _coordenadaXMinima, _coordenadaYMinima;
+    float _coordenadaXMaxima, _coordenadaYMaxima;
+    float _tamanioCasillaX, _tamanioCasillaY;
+    unsigned _tamanioLogico, _numeroDivisiones;
 
-    std::vector<std::vector<Casilla<T>>> mr;
+    std::vector<std::vector<Casilla<T>>> _miMallaRegular;
 
+    /**
+     * @brief Obtiene la casilla correspondiente a unas coordenadas.
+     */
     Casilla<T>* obtenerCasilla(float x, float y);
 
-    // Si quieres Haversine, declara aquí:
-    // float distancia2(float lat1, float lon1, float lat2, float lon2);
-
+    /**
+     * @brief Calcula distancia euclídea entre dos puntos.
+     */
     float distancia(float x, float y, float xcentro, float ycentro);
 
 public:
+    /**
+     * @brief Constructor parametrizado.
+     */
+    MallaRegular(float xmin=0.0, float ymin=0.0,
+                 float xmax=0.0, float ymax=0.0, int _nD=0);
 
-    MallaRegular(float aXMin=0.0, float aYMin=0.0,
-                 float aXMax=0.0, float aYMax=0.0, int nDiv=0);
+    /**
+     * @brief Constructor de copia.
+     */
+    MallaRegular(const MallaRegular<T> &_copiaMalla);
 
-    MallaRegular(const MallaRegular<T> &malla);
+    /**
+     * @brief Inserta un elemento en la malla.
+     */
+    void _insertarEnMalla(float x, float y, const T &dato);
 
-    void insertar(float x, float y, const T &dato);
-    T buscar(float x, float y, const T& dato);
-    bool borrar(float x, float y, T& dato);
+    /**
+     * @brief Busca un elemento en la malla.
+     */
+    T _buscarEnMalla(float x, float y, const T& dato);
 
+    /**
+     * @brief Borra un elemento de la malla.
+     */
+    bool _borrarEnMalla(float x, float y, T& dato);
+
+    /**
+     * @brief Destructor.
+     */
     ~MallaRegular(){}
 
+    /**
+     * @brief Busca los n elementos más cercanos a un punto.
+     */
     std::vector<T> buscarCercana(float x, float y, int n = 1);
 
-    unsigned numElementos();
-    unsigned maxElementosPorCelda2();
-    float promedioElementosPorCelda2();
+    /**
+     * @brief Devuelve el número total de elementos en la malla.
+     */
+    unsigned _getNumeroElementosMalla();
+
+    /**
+     * @brief Devuelve el máximo de elementos por celda.
+     */
+    unsigned _maximoDeElementosPorCelda();
+
+    /**
+     * @brief Devuelve el promedio de elementos por celda.
+     */
+    float _promedioDeElementosPorCelda();
 };
 
+/* ================= IMPLEMENTACIÓN ================= */
 
-// ================== IMPLEMENTACIÓN ===================
-
+/**
+ * @brief Constructor parametrizado.
+ */
 template <typename T>
-MallaRegular<T>::MallaRegular(float aXMin, float aYMin, float aXMax, float aYMax, int NDiv)
-        : xMin(aXMin), yMin(aYMin), xMax(aXMax), yMax(aYMax), taml(0), ndivi(NDiv)
+MallaRegular<T>::MallaRegular(float xmin, float ymin, float xmax, float ymax, int NDiv)
+        : _coordenadaXMinima(xmin),
+          _coordenadaYMinima(ymin),
+          _coordenadaXMaxima(xmax),
+          _coordenadaYMaxima(ymax),
+          _tamanioLogico(0),
+          _numeroDivisiones(NDiv)
 {
-    tamaCasillaX = (xMax - xMin) / NDiv;
-    tamaCasillaY = (yMax - yMin) / NDiv;
+    _tamanioCasillaX = (_coordenadaXMaxima - _coordenadaXMinima) / NDiv;
+    _tamanioCasillaY = (_coordenadaYMaxima - _coordenadaYMinima) / NDiv;
 
-    mr.insert(mr.begin(), NDiv, std::vector<Casilla<T>>(NDiv));
-    // mr.resize(NDiv, std::vector<Casilla<T>>(NDiv));
+    _miMallaRegular.insert(_miMallaRegular.begin(), NDiv,
+                           std::vector<Casilla<T>>(NDiv));
 }
 
+/**
+ * @brief Constructor de copia.
+ */
 template <typename T>
-MallaRegular<T>::MallaRegular(const MallaRegular<T> &malla)
-        : xMin(malla.xMin), xMax(malla.xMax), yMin(malla.yMin), yMax(malla.yMax),
-          taml(malla.taml), ndivi(malla.ndivi), mr(malla.mr)
+MallaRegular<T>::MallaRegular(const MallaRegular<T> &_copiaMalla)
+        : _coordenadaXMinima(_copiaMalla._coordenadaXMinima),
+          _coordenadaXMaxima(_copiaMalla._coordenadaXMaxima),
+          _coordenadaYMinima(_copiaMalla._coordenadaYMinima),
+          _coordenadaYMaxima(_copiaMalla._coordenadaYMaxima),
+          _tamanioLogico(_copiaMalla._tamanioLogico),
+          _numeroDivisiones(_copiaMalla._numeroDivisiones),
+          _miMallaRegular(_copiaMalla._miMallaRegular)
 {
 }
 
+/**
+ * @brief Calcula distancia euclídea en 2D.
+ */
 template <typename T>
-float MallaRegular<T>::distancia(float lat1, float lon1, float lat2, float lon2){
-    return sqrt(pow(lat1-lat2,2) + pow(lon1-lon2,2));
+float MallaRegular<T>::distancia(float x, float y, float xcentro, float ycentro){
+    return std::sqrt(std::pow(x-xcentro,2) + std::pow(y-ycentro,2));
 }
 
+/**
+ * @brief Obtiene la casilla asociada a unas coordenadas.
+ */
 template <typename T>
 Casilla<T>* MallaRegular<T>::obtenerCasilla(float x, float y) {
 
-    int i = (int)((x - xMin) / tamaCasillaX);
-    int j = (int)((y - yMin) / tamaCasillaY);
+    int i = (int)((x - _coordenadaXMinima) / _tamanioCasillaX);
+    int j = (int)((y - _coordenadaYMinima) / _tamanioCasillaY);
 
-    // Clamp para que nunca salga de rango
     if (i < 0) i = 0;
     if (j < 0) j = 0;
-    if (i >= (int)ndivi) i = (int)ndivi - 1;
-    if (j >= (int)ndivi) j = (int)ndivi - 1;
+    if (i >= (int)_numeroDivisiones) i = (int)_numeroDivisiones - 1;
+    if (j >= (int)_numeroDivisiones) j = (int)_numeroDivisiones - 1;
 
-    return &mr[i][j];
+    return &_miMallaRegular[i][j];
 }
 
-
+/**
+ * @brief Inserta un elemento en la malla.
+ */
 template <typename T>
-void MallaRegular<T>::insertar(float x, float y, const T& dato){
+void MallaRegular<T>::_insertarEnMalla(float x, float y, const T& dato){
     Casilla<T>* c = obtenerCasilla(x,y);
-    c->insertar(dato);
-    taml++;
+    c->_insertarEnCasilla(dato);
+    _tamanioLogico++;
 }
 
+/**
+ * @brief Busca un elemento en la malla.
+ */
 template <typename T>
-T MallaRegular<T>::buscar(float x, float y, const T &dato) {
+T MallaRegular<T>::_buscarEnMalla(float x, float y, const T &dato) {
     Casilla<T>* c = obtenerCasilla(x, y);
-    return c->buscar(dato);
+    return c->_buscarEnCasilla(dato);
 }
 
+/**
+ * @brief Borra un elemento de la malla.
+ */
 template <typename T>
-bool MallaRegular<T>::borrar(float x, float y, T& dato){
+bool MallaRegular<T>::_borrarEnMalla(float x, float y, T& dato){
     Casilla<T>* c = obtenerCasilla(x,y);
-    taml--;
-    return c->borrar(dato);
+    _tamanioLogico--;
+    return c->_borrarEnCasilla(dato);
 }
 
+/**
+ * @brief Devuelve el número total de elementos.
+ */
 template <typename T>
-unsigned MallaRegular<T>::numElementos(){
-    return taml;
+unsigned MallaRegular<T>::_getNumeroElementosMalla(){
+    return _tamanioLogico;
 }
 
+/**
+ * @brief Devuelve el máximo número de elementos en una celda.
+ */
 template <typename T>
-unsigned MallaRegular<T>::maxElementosPorCelda2(){
+unsigned MallaRegular<T>::_maximoDeElementosPorCelda(){
     unsigned maximo=0;
 
-    for (int i=0; i<ndivi; i++){
-        for (int j=0; j<ndivi; j++){
-            int tam = mr[i][j].get_tam();
+    for (int i=0; i<_numeroDivisiones; i++){
+        for (int j=0; j<_numeroDivisiones; j++){
+            int tam = _miMallaRegular[i][j]._getTamanioCasilla();
             if (tam > maximo)
                 maximo = tam;
         }
@@ -128,111 +216,60 @@ unsigned MallaRegular<T>::maxElementosPorCelda2(){
     return maximo;
 }
 
+/**
+ * @brief Calcula el promedio de elementos por celda.
+ */
 template <typename T>
-float MallaRegular<T>::promedioElementosPorCelda2(){
-    return (float)numElementos()/(ndivi*ndivi);
+float MallaRegular<T>::_promedioDeElementosPorCelda(){
+    return (float)_getNumeroElementosMalla() /
+           (_numeroDivisiones * _numeroDivisiones);
 }
+
+/**
+ * @brief Busca los n elementos más cercanos a un punto.
+ */
 template <typename T>
 std::vector<T> MallaRegular<T>::buscarCercana(float x, float y, int n) {
-    std::vector<T> resultado;
-    if (n <= 0 || ndivi == 0) return resultado;
 
-    // 1) localizar celda base (índices)
-    int ci = static_cast<int>((x - xMin) / tamaCasillaX);
-    int cj = static_cast<int>((y - yMin) / tamaCasillaY);
+    std::vector<T> resultado;
+    if (n <= 0 || _numeroDivisiones == 0) return resultado;
+
+    int ci = (int)((x - _coordenadaXMinima) / _tamanioCasillaX);
+    int cj = (int)((y - _coordenadaYMinima) / _tamanioCasillaY);
 
     if (ci < 0) ci = 0;
-    if (ci >= static_cast<int>(ndivi)) ci = static_cast<int>(ndivi) - 1;
     if (cj < 0) cj = 0;
-    if (cj >= static_cast<int>(ndivi)) cj = static_cast<int>(ndivi) - 1;
+    if (ci >= (int)_numeroDivisiones) ci = _numeroDivisiones - 1;
+    if (cj >= (int)_numeroDivisiones) cj = _numeroDivisiones - 1;
 
-    // 2) expandir por anillos y recoger candidatos
-    std::vector<std::pair<float, T> > candidatos;
-    candidatos.reserve(n * 8); // reserva aproximada
-
+    std::vector<std::pair<float, T>> candidatos;
     int radio = 0;
 
-    while (static_cast<int>(candidatos.size()) < n && radio < static_cast<int>(ndivi)) {
+    while ((int)candidatos.size() < n && radio < (int)_numeroDivisiones) {
 
-        int iMin = ci - radio;
-        int iMax = ci + radio;
-        int jMin = cj - radio;
-        int jMax = cj + radio;
+        int iMin = std::max(0, ci-radio);
+        int iMax = std::min((int)_numeroDivisiones-1, ci+radio);
+        int jMin = std::max(0, cj-radio);
+        int jMax = std::min((int)_numeroDivisiones-1, cj+radio);
 
-        if (iMin < 0) iMin = 0;
-        if (jMin < 0) jMin = 0;
-        if (iMax >= static_cast<int>(ndivi)) iMax = static_cast<int>(ndivi) - 1;
-        if (jMax >= static_cast<int>(ndivi)) jMax = static_cast<int>(ndivi) - 1;
-
-        // Recorremos SOLO el borde del anillo:
-        // - fila superior (jMin) y fila inferior (jMax)
-        // - columna izquierda (iMin) y columna derecha (iMax)
-        // evitando duplicar esquinas
-
-        // fila superior
-        int i;
-        for (i = iMin; i <= iMax; ++i) {
-            typename std::list<T>::iterator it;
-            for (it = mr[i][jMin].begin(); it != mr[i][jMin].end(); ++it) {
-                float d = distancia(x, y, (*it)->getPos().get_latitud(), (*it)->getPos().get_longitud());
-                candidatos.push_back(std::make_pair(d, *it));
+        for (int i=iMin; i<=iMax; i++) {
+            for (auto it=_miMallaRegular[i][jMin].begin();
+                 it!=_miMallaRegular[i][jMin].end(); ++it) {
+                float d = distancia(x,y,(*it)->getPos().get_latitud(),
+                                          (*it)->getPos().get_longitud());
+                candidatos.push_back({d,*it});
             }
         }
-
-        // fila inferior (si es distinta)
-        if (jMax != jMin) {
-            for (i = iMin; i <= iMax; ++i) {
-                typename std::list<T>::iterator it;
-                for (it = mr[i][jMax].begin(); it != mr[i][jMax].end(); ++it) {
-                    float d = distancia(x, y, (*it)->getPos().get_latitud(), (*it)->getPos().get_longitud());
-                    candidatos.push_back(std::make_pair(d, *it));
-                }
-            }
-        }
-
-        // columna izquierda (sin esquinas ya contadas)
-        int j;
-        for (j = jMin + 1; j <= jMax - 1; ++j) {
-            typename std::list<T>::iterator it;
-            for (it = mr[iMin][j].begin(); it != mr[iMin][j].end(); ++it) {
-                float d = distancia(x, y, (*it)->getPos().get_latitud(), (*it)->getPos().get_longitud());
-                candidatos.push_back(std::make_pair(d, *it));
-            }
-        }
-
-        // columna derecha (si es distinta, sin esquinas ya contadas)
-        if (iMax != iMin) {
-            for (j = jMin + 1; j <= jMax - 1; ++j) {
-                typename std::list<T>::iterator it;
-                for (it = mr[iMax][j].begin(); it != mr[iMax][j].end(); ++it) {
-                    float d = distancia(x, y, (*it)->getPos().get_latitud(), (*it)->getPos().get_longitud());
-                    candidatos.push_back(std::make_pair(d, *it));
-                }
-            }
-        }
-
-        ++radio;
+        radio++;
     }
 
-    // 3) ordenar por distancia
     std::sort(candidatos.begin(), candidatos.end(),
-              [](const std::pair<float, T>& a, const std::pair<float, T>& b) {
-                  return a.first < b.first;
-              });
+              [](auto &a, auto &b){ return a.first < b.first; });
 
-    // 4) quedarnos con los n primeros
-    int limite = n;
-    if (limite > static_cast<int>(candidatos.size()))
-        limite = static_cast<int>(candidatos.size());
-
-    int k;
-    for (k = 0; k < limite; ++k) {
-        resultado.push_back(candidatos[k].second);
-    }
+    for (int i=0; i<n && i<(int)candidatos.size(); i++)
+        resultado.push_back(candidatos[i].second);
 
     return resultado;
 }
-
-
 
 #endif // P6_MALLAREGULAR_H
